@@ -24,8 +24,30 @@ References:
 var fs = require('fs');
 var program = require('commander');
 var cheerio = require('cheerio');
+var util = require('util');
+var rest = require('restler');
+
+
 var HTMLFILE_DEFAULT = "index.html";
+var URL_DEFAULT = "https://floating-eyrie-5289.herokuapp.com/";
 var CHECKSFILE_DEFAULT = "checks.json";
+var HTMLTEMPFILE = "tmp.html";
+
+
+var assertGoodURL = function(inurl) {
+    rest.get(inurl).on('complete', function(result) {
+  	if (result instanceof Error) {
+		console.error('Error: ' + util.format(response.message));    		
+    		process.exit(1);
+  	} else {
+	        console.error("Wrote %s", HTMLTEMPFILE);
+        	fs.writeFileSync(HTMLTEMPFILE, result);
+			
+	}	
+    });
+    return HTMLTEMPFILE;
+};
+
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
@@ -65,8 +87,14 @@ if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
-        .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
+        .option('-u, --url <url>', 'URL to index.html', clone(assertGoodURL))
+	.parse(process.argv);
+    var checkJson;
+    if (program.file) {
+    	checkJson = checkHtmlFile(program.file, program.checks);
+    }else if(program.url)
+	checkJson = checkHtmlFile(HTMLTEMPFILE, program.checks);{
+    }
     var outJson = JSON.stringify(checkJson, null, 4);
     console.log(outJson);
 } else {
